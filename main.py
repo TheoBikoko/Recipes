@@ -1,12 +1,15 @@
 from pathlib import Path
-from database import read_db, save_db
+from database import read_db, save_db, read_db_list
 from fastapi import FastAPI
 from pydantic import BaseModel
 
 app = FastAPI()
 
+
+
 DATA_PATH = Path(__file__).parent / Path("data/recipes.json")
-DATA = read_db(DATA_PATH, "recipes")
+DATA = read_db_list(DATA_PATH, "recipes")
+
 
 class Recipe(BaseModel):
     id: int
@@ -65,13 +68,13 @@ class RecipeInput(BaseModel):
 async def home():
     return {"message": "Welcome to the recipe manager. With this program you can create, read, update and delete recipes and also filter them at your convenience."}
 
-@app.get("/recipes")
-def read_all() -> dict:
+@app.get("/recipes", response_model = list(RecipeOutput))
+def read_all() -> list:
     return DATA
 
-@app.get("/recipes/recipe_id")
+@app.get("/recipes/recipe_id", response_model = RecipeOutput)
 def read(recipe_id: int):
-    if recipe_id not in DATA["id"]:
+    if recipe_id not in DATA:
         raise KeyError("Recipe not found")
     return DATA[recipe_id]
 
