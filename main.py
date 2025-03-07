@@ -1,87 +1,89 @@
 from pathlib import Path
-from database import read_db, save_db, read_db_list
-from fastapi import FastAPI
+
+from starlette import status
+
+from database import read_db_list, save_db_list
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 app = FastAPI()
 
-
-
 DATA_PATH = Path(__file__).parent / Path("data/recipes.json")
-DATA = read_db_list(DATA_PATH, "recipes")
-
-
-class Recipe(BaseModel):
-    id: int
-    name: str
-    ingredients: list
-    instructions: list
-    prepTimeMinutes: int
-    cookTimeMinutes: int
-    servings: int
-    difficulty: str
-    cuisine: str
-    caloriesPerServing: int
-    tags: list
-    userId: int
-    image: str
-    rating: float
-    reviewCount: int
-    mealType: list
+recipes_list = read_db_list(DATA_PATH, "recipes")
 
 class RecipeOutput(BaseModel):
     id: int
     name: str
-    ingredients: list
-    instructions: list
+    ingredients: list[str]
+    instructions: list[str]
     prepTimeMinutes: int
     cookTimeMinutes: int
     servings: int
     difficulty: str
     cuisine: str
     caloriesPerServing: int
-    tags: list
+    tags: list[str]
     userId: int
     image: str
     rating: float
     reviewCount: int
-    mealType: list
+    mealType: list[str]
 
 class RecipeInput(BaseModel):
     name: str
-    ingredients: list
-    instructions: list
+    ingredients: list[str]
+    instructions: list[str]
     prepTimeMinutes: int
     cookTimeMinutes: int
     servings: int
     difficulty: str
     cuisine: str
     caloriesPerServing: int
-    tags: list
+    tags: list[str]
     userId: int
     image: str
     rating: float
     reviewCount: int
-    mealType: list
+    mealType: list[str]
 
 @app.get("/")
 async def home():
-    return {"message": "Welcome to the recipe manager. With this program you can create, read, update and delete recipes and also filter them at your convenience."}
+    return {"message": "Welcome to the recipe API. With this API you can create, read, update and delete recipes and also filter them at your convenience."}
 
-@app.get("/recipes", response_model = list(RecipeOutput))
-def read_all() -> list:
-    return DATA
+@app.get("/recipes", response_model = list[RecipeOutput])
+def read_all_recipes() -> list:
+    return recipes_list
 
-@app.get("/recipes/recipe_id", response_model = RecipeOutput)
-def read(recipe_id: int):
-    if recipe_id not in DATA:
-        raise KeyError("Recipe not found")
-    return DATA[recipe_id]
+@app.get("/recipes/{recipe_id}", response_model = RecipeOutput)
+def read_specific_recipe(recipe_id: int) -> RecipeOutput:
+   for recipe in recipes_list:
+       if recipe["id"] == recipe_id:
+           return recipe
+   raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe not found")
 
-#@app.post("/recipes")
+@app.post("/recipes")
+def create_recipe(new_recipe: RecipeInput):
+    new_id = max((recipe["id"] for recipe in recipes_list), default=0) + 1
+    new_recipe = new_recipe.dict()
+    new_recipe["id"] = new_id
+    recipes_list.append(new_recipe)
+    save_db_list(DATA_PATH, recipes_list)
+    return new_recipe
 
+@app.patch("/recipes/{recipe_id}")
+def update_recipe(recipe_id: int, updated_recipe : RecipeInput):
+    for recipe in recipes_list:
+       if recipe["id"] == recipe_id:
+            recipe.update(updated_recipe)
+            save_db_list(DATA_PATH, recipes_list)
+            return recipe
+       raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe not found")
 
-#@app.put("/recipes/{recipe_id}")
-
-
-#@app.delete("/recipes/{recipe_id}")
+@app.delete("/recipes/{recipe_id}")
+def delete_recipe(recipe_id: int):
+    for recipe in recipes_list:
+       if recipe["id"] == recipe_id:
+            recipes_list.remove(recipe)
+            save_db_list(DATA_PATH, recipes_list)
+            return recipe
+       raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe not found")
