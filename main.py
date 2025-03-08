@@ -89,3 +89,54 @@ def delete_recipe(recipe_id: int) -> RecipeOutput:
            return recipe
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe not found, it cannot be deleted.")
 
+@app.get("/recipes/cuisine/{cuisine_name}", response_model = list[RecipeOutput])
+def filter_recipes_by_cuisine(cuisine_name: str) -> list:
+   cuisine_list = []
+   for recipe in recipes_list:
+       if recipe["cuisine"] == cuisine_name:
+            cuisine_list.append(recipe)
+   return cuisine_list
+
+@app.get("/recipes/difficulty/{difficulty}", response_model = list[RecipeOutput])
+def filter_recipes_by_difficult (difficulty_level: str) -> list:
+   difficulty_list = []
+   for recipe in recipes_list:
+       if recipe["difficulty"] == difficulty_level:
+           difficulty_list.append(recipe)
+   return difficulty_list
+
+@app.get("/recipes/ingredients/{ingredient}", response_model = list[RecipeOutput])
+def filter_recipes_by_ingredients(ingredients: str) -> list:
+   ingredients_list = []
+   for recipe in recipes_list:
+       if ingredients in recipe["ingredients"]:
+           ingredients_list.append(recipe)
+   return ingredients_list
+
+@app.get("/recipes/preptime/{prep_time}", response_model = list[RecipeOutput])
+def filter_recipes_by_prep_time(prep_time: int) -> list:
+   prep_time_list = []
+   for recipe in recipes_list:
+       if recipe["prepTimeMinutes"] == prep_time:
+           prep_time_list.append(recipe)
+   return prep_time_list
+
+@app.get("/recipes/mealtype/{meal_type}", response_model = list[RecipeOutput])
+def filter_recipes_by_meal_type(meal_type: str) -> list:
+   prep_time_list = []
+   for recipe in recipes_list:
+       if meal_type in recipe["mealType"]:
+           prep_time_list.append(recipe)
+   return prep_time_list
+
+@app.get("/recipes/calories/{calories_per_serving}", response_model = list[RecipeOutput])
+def filter_recipes_by_calories_per_serving(order: str) -> list:
+   calories_list = []
+   for recipe in recipes_list:
+       calories_list.append(recipe)
+
+       if order == "ascendent":
+           calories_list.sort(key=lambda x:x["caloriesPerServing"])
+       elif order == "descendent":
+           calories_list.sort(key=lambda x:x["caloriesPerServing"], reverse = True)
+   return calories_list
