@@ -59,9 +59,9 @@ def read_specific_recipe(recipe_id: int) -> RecipeOutput:
    for recipe in recipes_list:
        if recipe["id"] == recipe_id:
            return recipe
-   raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe not found")
+   raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe not found, cannot be read")
 
-@app.post("/recipes")
+@app.post("/recipes", response_model = RecipeOutput)
 def create_recipe(new_recipe: RecipeInput):
     new_id = max((recipe["id"] for recipe in recipes_list), default=0) + 1
     new_recipe = new_recipe.dict()
@@ -70,20 +70,22 @@ def create_recipe(new_recipe: RecipeInput):
     save_db_list(DATA_PATH, recipes_list)
     return new_recipe
 
-@app.patch("/recipes/{recipe_id}")
-def update_recipe(recipe_id: int, updated_recipe : RecipeInput):
+@app.patch("/recipes/{recipe_id}", response_model = RecipeOutput)
+def update_recipe(recipe_id: int, updated_recipe : RecipeInput) -> RecipeOutput:
+    updated_recipe = updated_recipe
     for recipe in recipes_list:
        if recipe["id"] == recipe_id:
             recipe.update(updated_recipe)
             save_db_list(DATA_PATH, recipes_list)
             return recipe
-       raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe not found")
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe not found, it cannot be updated.")
 
-@app.delete("/recipes/{recipe_id}")
-def delete_recipe(recipe_id: int):
+@app.delete("/recipes/{recipe_id}",response_model = RecipeOutput)
+def delete_recipe(recipe_id: int) -> RecipeOutput:
     for recipe in recipes_list:
        if recipe["id"] == recipe_id:
-            recipes_list.remove(recipe)
-            save_db_list(DATA_PATH, recipes_list)
-            return recipe
-       raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe not found")
+           recipes_list.remove(recipe)
+           save_db_list(DATA_PATH, recipes_list)
+           return recipe
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe not found, it cannot be deleted.")
+
